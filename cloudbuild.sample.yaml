@@ -4,51 +4,51 @@ steps:
     entrypoint: bash
     args:
       - -c
-      - chmod -R ugo+rw /output_bundle /workspace /env /config
+      - chmod -R ugo+rw /output_bundle /workspace /env /config /yaml
     volumes:
       - name: output_bundle
         path: /output_bundle
       - name: env
         path: /env
-      # - name: yaml
-      #   path: /yaml
+      - name: yaml
+        path: /yaml
       - name: config
         path: /config
 
-  # - id: preparer
-  #   name: gcr.io/buildpacks/firebase-app-hosting-22/builder:latest
-  #   entrypoint: /bin/preparer
-  #   args:
-  #     [
-  #       --project_id,
-  #       blidd-experiments,
-  #       --apphostingyaml_filepath,
-  #       /workspace/apphosting.yaml,
-  #       --apphostingyaml_output_filepath,
-  #       /yaml/apphostingyaml_processed,
-  #       --dot_env_output_filepath,
-  #       /env/vars_with_secret_values,
-  #       --backend_root_directory,
-  #       ./,
-  #       --buildpack_config_output_filepath,
-  #       /config,
-  #     ]
-  #   volumes:
-  #     - name: output_bundle
-  #       path: /output_bundle
-  #     - name: env
-  #       path: /env
-  #     - name: yaml
-  #       path: /yaml
-  #     - name: config
-  #       path: /config
+  - id: preparer
+    name: gcr.io/buildpacks/firebase-app-hosting-22/builder:latest
+    entrypoint: /bin/preparer
+    args:
+      [
+        --project_id,
+        blidd-experiments,
+        --apphostingyaml_filepath,
+        /workspace/apphosting.yaml,
+        --apphostingyaml_output_filepath,
+        /yaml/apphostingyaml_processed,
+        --dot_env_output_filepath,
+        /env/vars_with_secret_values,
+        --backend_root_directory,
+        ./,
+        --buildpack_config_output_filepath,
+        /config,
+      ]
+    volumes:
+      - name: output_bundle
+        path: /output_bundle
+      - name: env
+        path: /env
+      - name: yaml
+        path: /yaml
+      - name: config
+        path: /config
 
   - id: build-from-source
     name: gcr.io/k8s-skaffold/pack
     entrypoint: "/bin/sh"
     args:
       - -c
-      - /usr/local/bin/pack build us-central1-docker.pkg.dev/blidd-experiments/firebaseapphosting-experiments/next-app:latest --network cloudbuild --builder gcr.io/buildpacks/firebase-app-hosting-22/builder:latest --volume output_bundle:/output_bundle:rw --trust-builder --env X_GOOGLE_TARGET_PLATFORM=fah --env FIREBASE_OUTPUT_BUNDLE_DIR=/output_bundle --env BUILDER_OUTPUT="$$BUILDER_OUTPUT" --env GOOGLE_BUILDABLE=. --path .
+      - trap "[ -f /workspace/.google-builder-output/output ] && mv /workspace/.google-builder-output/output $$BUILDER_OUTPUT" EXIT ;/usr/local/bin/pack build us-central1-docker.pkg.dev/blidd-experiments/firebaseapphosting-experiments/next-app:latest --network cloudbuild --builder gcr.io/buildpacks/firebase-app-hosting-22/builder:latest --volume output_bundle:/output_bundle:rw --trust-builder --env X_GOOGLE_TARGET_PLATFORM=fah --env BUILDER_OUTPUT=/builder-output/.google-builder-output/ --volume /workspace:/builder-output/:rw --env FIREBASE_OUTPUT_BUNDLE_DIR=/output_bundle --env GOOGLE_BUILDABLE=. --path .
     volumes:
       - name: output_bundle
         path: /output_bundle
